@@ -2,7 +2,13 @@ const express = require("express");
 const router = express.Router();
 const { protect, authorize } = require("../middleware/auth.middleware");
 
-const { register, login } = require("../controllers/auth.controller");
+const {
+  register,
+  login,
+  logout,
+  refreshAccessToken,
+  updateUserRole,
+} = require("../controllers/auth.controller");
 
 router.post("/register", register);
 router.post("/login", login);
@@ -18,9 +24,9 @@ router.get(
   },
 );
 
-const { updateUserRole } = require("../controllers/auth.controller");
-
 router.patch("/users/:userId/role", protect, authorize("admin"), updateUserRole);
 
+router.post("/refresh", refreshAccessToken);
+router.post("/logout", protect, logout);
 
 module.exports = router;
