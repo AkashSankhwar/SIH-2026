@@ -11,7 +11,6 @@ const {
   createSOS,
 } = require("../controllers/incident.controller");
 
-router.post("/report", protect, createIncident);
 router.post("/sos", protect, createSOS);
 router.post("/report", protect, upload.single("photo"), createIncident);
 router.get("/my-reports", protect, getMyIncidents);
