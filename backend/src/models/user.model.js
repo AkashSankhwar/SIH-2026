@@ -32,6 +32,23 @@ const userSchema = new mongoose.Schema(
       enum: ["citizen", "authority", "admin"],
       default: "citizen",
     },
+    authorityLevel: {
+      type: String,
+      enum: ["state_admin", "district_admin", "field_responder", "department"],
+      default: null, // sirf authority role wale users ke liye set hoga
+    },
+    jurisdictionState: {
+      type: String,
+      default: null, // State Admin/District Admin ke liye
+    },
+    jurisdictionDistrict: {
+      type: String,
+      default: null, // District Admin/Field Responder ke liye
+    },
+    departmentName: {
+      type: String,
+      default: null, // Department level users ke liye (jaise "Fire Department", "Medical")
+    },
   },
   { timestamps: true },
 );

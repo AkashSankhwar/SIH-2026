@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const { protect, authorize } = require("../middleware/auth.middleware");
-
 const {
   register,
   login,
@@ -10,6 +9,7 @@ const {
   updateUserRole,
   getProfile,
   updateProfile,
+  setAuthorityDetails,
 } = require("../controllers/auth.controller");
 
 router.post("/register", register);
@@ -29,7 +29,7 @@ router.get(
 );
 
 router.patch("/users/:userId/role", protect, authorize("admin"), updateUserRole);
-
+router.patch("/users/:userId/authority", protect, authorize("admin"), setAuthorityDetails);
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", protect, logout);
 

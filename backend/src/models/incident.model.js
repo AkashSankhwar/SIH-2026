@@ -50,11 +50,7 @@ const incidentSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-    assignedDepartment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Department",
-      default: null,
-    },
+    assignedDepartment: { type: String, trim: true, default: null },
     priorityScore: { type: Number, default: 0 },
   },
   { timestamps: true },

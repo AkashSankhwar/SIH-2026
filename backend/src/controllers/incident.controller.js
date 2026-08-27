@@ -63,6 +63,12 @@ const createIncident = async (req, res) => {
       mediaUrls,
       reportedBy: req.user._id,
     });
+    // Naya: notification emit karo us district ke room mein
+    const io = req.app.get("io");
+    io.to(`district:${district}`).emit("new-incident", {
+      message: `New incident reported in ${district}`,
+      incident,
+    });
 
     res.status(201).json({
       success: true,
@@ -156,11 +162,19 @@ const verifyIncident = async (req, res) => {
 
     await incident.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Incident verified successfully",
-      data: incident,
+    // verifyIncident mein, save hone ke baad:
+    const io = req.app.get("io");
+    io.to(`district:${incident.district}`).emit("incident-updated", {
+      message: `Incident "${incident.title}" has been verified`,
+      incident,
     });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Incident verified successfully",
+        data: incident,
+      });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -206,7 +220,12 @@ const assignIncident = async (req, res) => {
     if (assignedDepartment) incident.assignedDepartment = assignedDepartment;
 
     await incident.save();
-
+    // verifyIncident mein, save hone ke baad:
+    const io = req.app.get("io");
+    io.to(`district:${incident.district}`).emit("incident-updated", {
+      message: `Incident "${incident.title}" has been assigned`,
+      incident,
+    });
     res.status(200).json({
       success: true,
       message: "Incident assigned successfully",

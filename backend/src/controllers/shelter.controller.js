@@ -79,5 +79,39 @@ const getAllShelters = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch shelters", error: err.message });
   }
 };
+// @desc   Update shelter capacity/occupancy details (authority/admin only)
+// @route  PATCH /api/shelters/:id
+const updateShelter = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { capacity, currentOccupancy, contactNumber, isActive } = req.body;
 
-module.exports = { createShelter, getNearbyShelters, getAllShelters };
+    const shelter = await Shelter.findById(id);
+    if (!shelter) {
+      return res.status(404).json({ success: false, message: "Shelter not found" });
+    }
+
+    // sirf jo fields bheji gayi hain wahi update honi chahiye
+    if (capacity !== undefined) shelter.capacity = capacity;
+    if (currentOccupancy !== undefined) shelter.currentOccupancy = currentOccupancy;
+    if (contactNumber !== undefined) shelter.contactNumber = contactNumber;
+    if (isActive !== undefined) shelter.isActive = isActive;
+
+    // sanity check — occupancy capacity se zyada nahi honi chahiye
+    if (shelter.currentOccupancy > shelter.capacity) {
+      return res.status(400).json({
+        success: false,
+        message: "currentOccupancy cannot exceed capacity",
+      });
+    }
+
+    await shelter.save();
+
+    res.status(200).json({ success: true, message: "Shelter updated successfully", data: shelter });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to update shelter", error: err.message });
+  }
+};
+
+module.exports = { createShelter, getNearbyShelters, getAllShelters, updateShelter };
+

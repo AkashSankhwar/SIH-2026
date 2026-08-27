@@ -1,12 +1,25 @@
 const User = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const config = require("../config/config.js");
 
-const generateAccessToken = (userId, role) => {
-  return jwt.sign({ id: userId, role: role }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
-  });
+const generateAccessToken = (
+  userId,
+  role,
+  authorityLevel,
+  jurisdictionState,
+  jurisdictionDistrict,
+) => {
+  return jwt.sign(
+    {
+      id: userId,
+      role: role,
+      authorityLevel,
+      jurisdictionState,
+      jurisdictionDistrict,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" },
+  );
 };
 const generateRefreshToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
@@ -41,7 +54,13 @@ exports.register = async (req, res) => {
     });
 
     // 5. Generate token and respond
-    const accessToken = generateAccessToken(user._id, user.role);
+    const accessToken = generateAccessToken(
+      user._id,
+      user.role,
+      user.authorityLevel,
+      user.jurisdictionState,
+      user.jurisdictionDistrict,
+    );
     const refreshToken = generateRefreshToken(user._id);
 
     // refresh token DB mein save karo
@@ -84,14 +103,20 @@ exports.login = async (req, res) => {
     }
 
     // 3. Generate token and respond
-   const accessToken = generateAccessToken(user._id, user.role);
+    const accessToken = generateAccessToken(
+      user._id,
+      user.role,
+      user.authorityLevel,
+      user.jurisdictionState,
+      user.jurisdictionDistrict,
+    );
     const refreshToken = generateRefreshToken(user._id);
-    
+
     // refresh token DB mein save karo
     user.refreshToken = refreshToken;
     await user.save();
 
-   res.status(200).json({
+    res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -177,7 +202,9 @@ exports.refreshAccessToken = async (req, res) => {
 // @route  GET /api/auth/profile
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password -refreshToken");
+    const user = await User.findById(req.user._id).select(
+      "-password -refreshToken",
+    );
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -210,6 +237,59 @@ exports.updateProfile = async (req, res) => {
       phone: user.phone,
       address: user.address,
       role: user.role,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+// @desc   Set authority level and jurisdiction for a user (admin only)
+// @route  PATCH /api/auth/users/:userId/authority
+exports.setAuthorityDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const {
+      authorityLevel,
+      jurisdictionState,
+      jurisdictionDistrict,
+      departmentName,
+    } = req.body;
+
+    const allowedLevels = [
+      "state_admin",
+      "district_admin",
+      "field_responder",
+      "department",
+    ];
+    if (!authorityLevel || !allowedLevels.includes(authorityLevel)) {
+      return res
+        .status(400)
+        .json({ message: "Valid authorityLevel is required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ye user ko authority role mein bhi daal do agar already nahi hai
+    user.role = "authority";
+    user.authorityLevel = authorityLevel;
+    user.jurisdictionState = jurisdictionState || null;
+    user.jurisdictionDistrict = jurisdictionDistrict || null;
+    user.departmentName = departmentName || null;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Authority details set successfully",
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      authorityLevel: user.authorityLevel,
+      jurisdictionState: user.jurisdictionState,
+      jurisdictionDistrict: user.jurisdictionDistrict,
+      departmentName: user.departmentName,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

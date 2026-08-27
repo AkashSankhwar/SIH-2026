@@ -37,3 +37,17 @@ exports.authorize = (...allowedRoles) => {
     next();
   };
 };
+// Har request ke req.user se ek MongoDB filter banata hai, jurisdiction ke hisab se
+exports.getJurisdictionFilter = (user) => {
+  if (user.role === "admin") return {};   // admin sabkuch dekh sakta hai
+
+  switch (user.authorityLevel) {
+    case "state_admin":
+      return { state: user.jurisdictionState };
+    case "district_admin":
+    case "field_responder":
+      return { district: user.jurisdictionDistrict };
+    default:
+      return {};   // department ya kuch aur — abhi ke liye khula rakha, Phase 2 mein refine karenge
+  }
+};
